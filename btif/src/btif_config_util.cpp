@@ -195,6 +195,7 @@ int btif_config_save_file(const char* file_name)
     data.xml = &xml;
     if(btif_config_enum(enum_config, &data))
         ret = xml.SaveFile(file_name) == XML_SUCCESS;
+    sync();
     return ret;
 }
 int btif_config_load_file(const char* file_name)

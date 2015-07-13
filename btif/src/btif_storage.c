@@ -1402,7 +1402,7 @@ bt_status_t btif_storage_add_hid_device_info(bt_bdaddr_t *remote_bd_addr,
     if(dl_len > 0)
         btif_config_set("Remote", bdstr, "HidDescriptor", (const char*)dsc_list, dl_len,
                         BTIF_CFG_TYPE_BIN);
-    btif_config_save();
+    btif_config_flush();
     return BT_STATUS_SUCCESS;
 }
 
@@ -1527,7 +1527,7 @@ bt_status_t btif_storage_remove_hid_info(bt_bdaddr_t *remote_bd_addr)
     btif_config_remove("Remote", bdstr, "HidSSRMaxLatency");
     btif_config_remove("Remote", bdstr, "HidSSRMinTimeout");
     btif_config_remove("Remote", bdstr, "HidDescriptor");
-    btif_config_save();
+    btif_config_flush();
     return BT_STATUS_SUCCESS;
 }
 
