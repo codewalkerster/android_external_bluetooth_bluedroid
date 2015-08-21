@@ -116,6 +116,10 @@ ifeq ($(TARGET_PRODUCT), full_maguro)
 	LOCAL_CFLAGS += -DTARGET_MAGURO
 endif
 
+ifeq ($(BLUETOOTH_HCI_USE_RTK_H5),true)
+LOCAL_CFLAGS += -DHCI_USE_RTK_H5
+endif
+
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libdl \

@@ -25,7 +25,7 @@
 
 #include "bta_api.h"
 #include "config.h"
-
+#include "bt_hci_bdroid.h"
 // TODO: eliminate these global variables.
 extern char hci_logfile[256];
 extern BOOLEAN hci_logging_enabled;
@@ -48,6 +48,9 @@ void bte_load_conf(const char *path) {
 
   strlcpy(hci_logfile, config_get_string(config, CONFIG_DEFAULT_SECTION, "BtSnoopFileName", ""), sizeof(hci_logfile));
   hci_logging_enabled = config_get_bool(config, CONFIG_DEFAULT_SECTION, "BtSnoopLogOutput", false);
+#ifdef HCI_USE_RTK_H5
+  h5_log_enable = config_get_bool(config, CONFIG_DEFAULT_SECTION, "H5LogOutput", false);
+#endif
   hci_save_log = config_get_bool(config, CONFIG_DEFAULT_SECTION, "BtSnoopSaveLog", false);
   trace_conf_enabled = config_get_bool(config, CONFIG_DEFAULT_SECTION, "TraceConf", false);
 
