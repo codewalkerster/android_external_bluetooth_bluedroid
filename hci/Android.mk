@@ -18,45 +18,45 @@ ifeq ($(BLUETOOTH_HCI_USE_MCT),true)
 
 LOCAL_CFLAGS += -DHCI_USE_MCT
 
+ifeq ($(QCOM_BT_USE_SMD_TTY),true)
+
+LOCAL_CFLAGS += -DQCOM_WCN_SSR
+
+endif
+
 LOCAL_SRC_FILES += \
 	src/hci_mct.c \
 	src/userial_mct.c
 
 else
-ifeq ($(BLUETOOTH_HCI_USE_RTK_H5),true)
-       LOCAL_CFLAGS := -DHCI_USE_RTK_H5
-       LOCAL_SRC_FILES += \
-             src/hci_h5.c \
-             src/userial.c \
-             src/bt_skbuff.c \
-             src/bt_list.c
 
-else
+LOCAL_CFLAGS += -DHCI_H2
+
 LOCAL_SRC_FILES += \
 	src/hci_h4.c \
-	src/userial.c
+	src/usb.c
+
 endif
-endif
+
 LOCAL_CFLAGS += -std=c99
-
-ifeq ($(BOARD_HAVE_BLUETOOTH_RTK_COEX),true)
-LOCAL_CFLAGS += -DBLUETOOTH_RTK_COEX
-LOCAL_SRC_FILES += \
-        src/rtk_parse.c
-
-LOCAL_C_INCLUDES += \
-        $(LOCAL_PATH)/../stack/include \
-        $(LOCAL_PATH)/../gki/ulinux
-endif
 
 LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/../osi/include \
 	$(LOCAL_PATH)/../utils/include \
-        $(bdroid_C_INCLUDES)
+	external/libusb \
+	$(bdroid_C_INCLUDES)
+
+LOCAL_SHARED_LIBRARIES += \
+	libcutils \
+	liblog \
+	libdl \
+	libusb \
+	libbt-utils
+
+LOCAL_STATIC_LIBRARIES := libosi
 
 LOCAL_MODULE := libbt-hci
 LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := STATIC_LIBRARIES
-
-include $(BUILD_STATIC_LIBRARY)
+LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+include $(BUILD_SHARED_LIBRARY)

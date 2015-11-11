@@ -22,6 +22,36 @@
 #include "bt_target.h"
 #include "bt_types.h"
 
+#if (defined(OBX_OVER_L2CAP_INCLUDED) && OBX_OVER_L2CAP_INCLUDED == TRUE)
+#ifndef GKI_POOL_ID_10
+#define GKI_POOL_ID_10             10
+#endif
+
+#ifndef GKI_BUF10_SIZE
+#define GKI_BUF10_SIZE            (65000 + 24)
+#endif
+
+#ifndef GKI_BUF10_MAX
+#define GKI_BUF10_MAX           16
+#endif
+
+#else
+
+#ifndef GKI_POOL_ID_10
+#define GKI_POOL_ID_10                0
+#endif /* ifndef GKI_POOL_ID_10 */
+
+#ifndef GKI_BUF10_SIZE
+#define GKI_BUF10_SIZE                0
+#endif /* ifndef GKI_BUF10_SIZE */
+
+#ifndef GKI_BUF10_MAX
+#define GKI_BUF10_MAX           0
+#endif
+
+#endif
+
+
 /* Error codes */
 #define GKI_SUCCESS         0x00
 #define GKI_FAILURE         0x01
@@ -197,6 +227,8 @@ GKI_API extern UINT16  GKI_wait(UINT16, UINT32);
 GKI_API extern BOOLEAN GKI_timer_queue_is_empty(const TIMER_LIST_Q *timer_q);
 GKI_API extern TIMER_LIST_ENT *GKI_timer_getfirst(const TIMER_LIST_Q *timer_q);
 GKI_API extern INT32 GKI_timer_ticks_getinitial(const TIMER_LIST_ENT *tle);
+
+GKI_API extern UINT64 GKI_now_us(void);
 
 /* Disable Interrupts, Enable Interrupts
 */

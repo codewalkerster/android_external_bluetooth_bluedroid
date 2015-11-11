@@ -34,6 +34,7 @@
 
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/ioctl.h>
 #include <signal.h>
 #include <errno.h>
 #include <pthread.h>
@@ -263,16 +264,12 @@ static void uipc_check_task_flags_locked(void)
     {
         //BTIF_TRACE_EVENT("CHECK TASK FLAGS %x %x",  uipc_main.ch[i].task_evt_flags, UIPC_TASK_FLAG_DISCONNECT_CHAN);
         if (uipc_main.ch[i].task_evt_flags & UIPC_TASK_FLAG_DISCONNECT_CHAN)
-        {
-            uipc_main.ch[i].task_evt_flags &= ~UIPC_TASK_FLAG_DISCONNECT_CHAN;
             uipc_close_ch_locked(i);
-        }
 
         /* add here */
 
     }
 }
-
 
 static int uipc_check_fd_locked(tUIPC_CH_ID ch_id)
 {
@@ -284,6 +281,11 @@ static int uipc_check_fd_locked(tUIPC_CH_ID ch_id)
     if (SAFE_FD_ISSET(uipc_main.ch[ch_id].srvfd, &uipc_main.read_set))
     {
         BTIF_TRACE_EVENT("INCOMING CONNECTION ON CH %d", ch_id);
+
+        if (uipc_main.ch[ch_id].fd > 0) {
+            BTIF_TRACE_WARNING("Channel %d has incoming connection while still connected", ch_id);
+            uipc_close_ch_locked(ch_id);
+        }
 
         uipc_main.ch[ch_id].fd = accept_server_socket(uipc_main.ch[ch_id].srvfd);
 
@@ -375,9 +377,10 @@ static int uipc_setup_server_locked(tUIPC_CH_ID ch_id, char *name, tUIPC_RCV_CBA
 
 static void uipc_flush_ch_locked(tUIPC_CH_ID ch_id)
 {
-    char buf[UIPC_FLUSH_BUFFER_SIZE];
+    char *buf;
     struct pollfd pfd;
     int ret;
+    int size = 0;
 
     pfd.events = POLLIN;
     pfd.fd = uipc_main.ch[ch_id].fd;
@@ -406,9 +409,22 @@ static void uipc_flush_ch_locked(tUIPC_CH_ID ch_id)
             return;
         }
 
-        /* read sufficiently large buffer to ensure flush empties socket faster than
-           it is getting refilled */
-        read(pfd.fd, &buf, UIPC_FLUSH_BUFFER_SIZE);
+        ret = ioctl(uipc_main.ch[ch_id].fd, FIONREAD, &size);
+        if (ret <0) {
+            BTIF_TRACE_EVENT("uipc_flush_ch_locked: FIONREAD error: %d", ret);
+            return;
+        }
+
+        BTIF_TRACE_EVENT("uipc_flush_ch_locked: FIONREAD : %d", size);
+        buf = (char*)malloc(size);
+        if (buf == NULL) {
+            BTIF_TRACE_EVENT("uipc_flush_ch_locked: buf alloc issue %d", ret);
+            return;
+        }
+        ret = read(pfd.fd, buf, size);
+        BTIF_TRACE_EVENT("Flushed %d bytes", ret);
+        free(buf);
+        buf = NULL;
     }
 }
 
@@ -439,6 +455,8 @@ static int uipc_close_ch_locked(tUIPC_CH_ID ch_id)
 
     if (ch_id >= UIPC_CH_NUM)
         return -1;
+
+    uipc_main.ch[ch_id].task_evt_flags &= ~UIPC_TASK_FLAG_DISCONNECT_CHAN;
 
     if (uipc_main.ch[ch_id].srvfd != UIPC_DISCONNECTED)
     {

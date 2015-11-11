@@ -33,6 +33,7 @@
 #include "btif_config.h"
 
 #include "btif_common.h"
+#include "btif_api.h"
 #include "btif_dm.h"
 #include "btif_util.h"
 #include "btif_gatt.h"
@@ -298,9 +299,12 @@ static void btif_gatt_set_encryption_cb (BD_ADDR bd_addr, tBTA_TRANSPORT transpo
     UNUSED(bd_addr);
     UNUSED(transport);
 
-    if (result != BTA_SUCCESS && result != BTA_BUSY)
+    BTIF_TRACE_WARNING("%s() - Encryption failed (%d)", __FUNCTION__, result);
+    if(result == BTA_ERR_KEY_MISSING)
     {
-        BTIF_TRACE_WARNING("%s() - Encryption failed (%d)", __FUNCTION__, result);
+        bt_bdaddr_t bda;
+        bdcpy(bda.address, bd_addr);
+        btif_dm_remove_bond(&bda);
     }
 }
 

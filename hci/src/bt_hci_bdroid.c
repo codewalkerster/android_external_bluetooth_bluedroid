@@ -340,9 +340,6 @@ static int init(const bt_hc_callbacks_t* p_cb, unsigned char *local_bdaddr)
 #ifdef HCI_USE_MCT
     extern tHCI_IF hci_mct_func_table;
     p_hci_if = &hci_mct_func_table;
-#elif defined HCI_USE_RTK_H5
-    extern tHCI_IF hci_h5_func_table;
-    p_hci_if = &hci_h5_func_table;
 #else
     extern tHCI_IF hci_h4_func_table;
     p_hci_if = &hci_h4_func_table;
@@ -395,19 +392,23 @@ static int lpm(bt_hc_low_power_event_t event)
     switch (event)
     {
         case BT_HC_LPM_DISABLE:
-            thread_post(hc_cb.worker_thread, event_lpm_disable, NULL);
+            if (hc_cb.worker_thread)
+                thread_post(hc_cb.worker_thread, event_lpm_disable, NULL);
             break;
 
         case BT_HC_LPM_ENABLE:
-            thread_post(hc_cb.worker_thread, event_lpm_enable, NULL);
+            if (hc_cb.worker_thread)
+                thread_post(hc_cb.worker_thread, event_lpm_enable, NULL);
             break;
 
         case BT_HC_LPM_WAKE_ASSERT:
-            thread_post(hc_cb.worker_thread, event_lpm_wake_device, NULL);
+            if (hc_cb.worker_thread)
+                thread_post(hc_cb.worker_thread, event_lpm_wake_device, NULL);
             break;
 
         case BT_HC_LPM_WAKE_DEASSERT:
-            thread_post(hc_cb.worker_thread, event_lpm_allow_sleep, NULL);
+            if (hc_cb.worker_thread)
+                thread_post(hc_cb.worker_thread, event_lpm_allow_sleep, NULL);
             break;
     }
     return BT_HC_STATUS_SUCCESS;
@@ -417,13 +418,15 @@ static int lpm(bt_hc_low_power_event_t event)
 /** Called prior to stack initialization */
 static void preload(UNUSED_ATTR TRANSAC transac) {
   BTHCDBG("preload");
-  thread_post(hc_cb.worker_thread, event_preload, NULL);
+  if (hc_cb.worker_thread)
+    thread_post(hc_cb.worker_thread, event_preload, NULL);
 }
 
 /** Called post stack initialization */
 static void postload(UNUSED_ATTR TRANSAC transac) {
   BTHCDBG("postload");
-  thread_post(hc_cb.worker_thread, event_postload, NULL);
+  if (hc_cb.worker_thread)
+    thread_post(hc_cb.worker_thread, event_postload, NULL);
 }
 
 /** Transmit frame */
@@ -451,9 +454,16 @@ static int tx_hc_cmd(TRANSAC transac, char *p_buf, int len) {
   if (!transac)
     return BT_HC_STATUS_FAIL;
 
-  thread_post(hc_cb.worker_thread, event_tx_cmd, transac);
+  if (hc_cb.worker_thread)
+    thread_post(hc_cb.worker_thread, event_tx_cmd, transac);
   return BT_HC_STATUS_SUCCESS;
 }
+static void ssr_cleanup (void) {
+    BTHCDBG("ssr_cleanup");
+    /* Calling vendor-specific part */
+    vendor_ssrcleanup();
+}
+
 
 // Closes the interface.
 // This routine is not thread safe.
@@ -472,7 +482,7 @@ static void cleanup(void)
         {
             epilog_wait_timer();
             // Stop reading thread
-            userial_close_reader();
+//            userial_close_reader();
 
             thread_post(hc_cb.worker_thread, event_epilog, NULL);
         }
@@ -516,6 +526,7 @@ static const bt_hc_interface_t bluetoothHCLibInterface = {
     logging,
     cleanup,
     tx_hc_cmd,
+    ssr_cleanup
 };
 
 /*******************************************************************************

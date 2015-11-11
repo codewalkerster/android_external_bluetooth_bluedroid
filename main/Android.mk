@@ -6,6 +6,10 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
+	LOCAL_CFLAGS += -DSAMPLE_RATE_48K
+endif
+
 # HAL layer
 LOCAL_SRC_FILES:= \
 	../btif/src/bluetooth.c
@@ -33,11 +37,13 @@ LOCAL_SRC_FILES += \
 	../btif/src/btif_hf.c \
 	../btif/src/btif_hf_client.c \
 	../btif/src/btif_hh.c \
+	../btif/src/btif_hd.c \
 	../btif/src/btif_hl.c \
 	../btif/src/btif_mce.c \
 	../btif/src/btif_media_task.c \
 	../btif/src/btif_pan.c \
 	../btif/src/btif_profile_queue.c \
+	../btif/src/bluetoothTrack.cpp \
 	../btif/src/btif_rc.c \
 	../btif/src/btif_sm.c \
 	../btif/src/btif_sock.c \
@@ -46,7 +52,15 @@ LOCAL_SRC_FILES += \
 	../btif/src/btif_sock_thread.c \
 	../btif/src/btif_sock_util.c \
 	../btif/src/btif_storage.c \
-	../btif/src/btif_util.c
+	../btif/src/btif_util.c \
+        ../btif/src/btif_sock_l2cap.c\
+        ../btif/src/btif_l2cap.c \
+        ../wipowerif/src/wipower.c \
+        ../btif/src/btif_gatt_qual.c \
+        ../btif/src/btif_gap.c \
+        ../btif/src/btif_smp.c \
+        ../btif/src/btif_sdp.c\
+        ../btif/src/btif_rfcomm.c \
 
 # callouts
 LOCAL_SRC_FILES += \
@@ -100,7 +114,9 @@ LOCAL_C_INCLUDES += . \
 	$(LOCAL_PATH)/../embdrv/sbc/decoder/include \
 	$(LOCAL_PATH)/../audio_a2dp_hw \
 	$(LOCAL_PATH)/../utils/include \
+	$(LOCAL_PATH)/../wipowerif/include \
 	$(bdroid_C_INCLUDES) \
+    $(TOP)/frameworks/av/include/media \
 	external/tinyxml2
 
 LOCAL_CFLAGS += -DBUILDCFG $(bdroid_CFLAGS) -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=unused-parameter
@@ -116,22 +132,20 @@ ifeq ($(TARGET_PRODUCT), full_maguro)
 	LOCAL_CFLAGS += -DTARGET_MAGURO
 endif
 
-ifeq ($(BLUETOOTH_HCI_USE_RTK_H5),true)
-LOCAL_CFLAGS += -DHCI_USE_RTK_H5
-endif
-
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libdl \
 	liblog \
-	libpower
+	libpower \
+	libutils \
+	libbt-hci \
+	libbt-utils \
+	libmedia
 
 LOCAL_STATIC_LIBRARIES := \
 	libbt-brcm_bta \
 	libbt-brcm_gki \
 	libbt-brcm_stack \
-	libbt-hci \
-	libbt-utils \
 	libbt-qcom_sbc_decoder \
 	libosi \
 	libtinyxml2 \

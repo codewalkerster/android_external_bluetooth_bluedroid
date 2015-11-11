@@ -33,6 +33,8 @@
 #define ADV_FLAGS_LIMITED BTA_DM_LIMITED_DISC
 #define ADV_FLAGS_GENERAL BTA_DM_GENERAL_DISC
 
+#define INVALID_CLIENT_IF 0xFF
+
 typedef struct
 {
     int client_if;
@@ -55,9 +57,11 @@ typedef struct
     BOOLEAN is_scan_rsp;
     UINT8 client_if;
     UINT16 service_uuid_len;
+#if BLE_INCLUDED == TRUE
     tBTA_BLE_AD_MASK mask;
     tBTA_BLE_ADV_DATA data;
     tBTA_BLE_ADV_PARAMS param;
+#endif
     TIMER_LIST_ENT tle_limited_timer;
     int timeout_s;
 }btgatt_multi_adv_inst_cb;
@@ -91,6 +95,7 @@ extern void btif_gattc_adv_data_packager(int client_if, bool set_scan_rsp,
                 int service_data_len, char* service_data, int service_uuid_len,
                 char* service_uuid, btif_adv_data_t *p_multi_adv_inst);
 void btif_multi_adv_timer_ctrl(int client_if, TIMER_CBACK cb);
+void btif_gatt_adv_inst_cleanup(void);
 #endif
 
 

@@ -195,7 +195,6 @@ int btif_config_save_file(const char* file_name)
     data.xml = &xml;
     if(btif_config_enum(enum_config, &data))
         ret = xml.SaveFile(file_name) == XML_SUCCESS;
-    sync();
     return ret;
 }
 int btif_config_load_file(const char* file_name)
@@ -244,7 +243,11 @@ static int parse_sections(const char* section_name, const XMLElement* section)
                     const char* value_type = value->Attribute(BLUEDROID_VALUE_TYPE);
                     //debug("value ele name:%s, section name:%s, key name:%s, value name:%s, value type:%s",
                     //        value->Name(), section_name, key_name, value_name, value_type);
-                    int type = type_str2int(value_type);
+                    int type = BTIF_CFG_TYPE_INVALID;
+                    if(value_type)
+                    {
+                        type = type_str2int((const char*)value_type);
+                    }
                     if(value_name && *value_name && type != BTIF_CFG_TYPE_INVALID)
                     {
                         const char* value_str = value->GetText() ? value->GetText() : "";
@@ -254,7 +257,7 @@ static int parse_sections(const char* section_name, const XMLElement* section)
                             btif_config_set_str(section_name, key_name, value_name, value_str);
                         else if(type & BTIF_CFG_TYPE_INT)
                         {
-                            if(*value_str)
+                            if(value_str && *value_str)
                             {
                                 int v = atoi(value_str);
                                 btif_config_set_int(section_name, key_name, value_name, v);
@@ -298,15 +301,16 @@ static void enum_config(void* user_data, const char* section_name, const char* k
                         const char*  value, int bytes, int type)
 {
     enum_user_data& d = *(enum_user_data*)user_data;
+    XMLElement * root_elem = d.xml->RootElement();
     //debug("in, key:%s, value:%s", key_name, value_name);
     //debug("section name:%s, key name:%s, value name:%s, value type:%s",
     //                      section_name, key_name, value_name, type_int2str(type));
     if(type & BTIF_CFG_TYPE_VOLATILE)
         return; //skip any volatile value
-    if(d.sn != section_name)
+    if( (d.sn != section_name) && (root_elem != NULL) )
     {
         d.sn = section_name;
-        d.se = add_ele(d.xml, d.xml->RootElement(), ++d.si, section_name);
+        d.se = add_ele(d.xml, root_elem, ++d.si, section_name);
         d.ki = 0;
     }
     if(d.kn != key_name)
@@ -346,12 +350,12 @@ static void enum_config(void* user_data, const char* section_name, const char* k
 
 static int type_str2int(const char* type)
 {
+    if(type == NULL || *type == 0 || strcmp(type, "string") == 0)
+        return  BTIF_CFG_TYPE_STR;
     if(strcmp(type, "int") == 0)
         return BTIF_CFG_TYPE_INT;
     if(strcmp(type, "binary") == 0)
         return BTIF_CFG_TYPE_BIN;
-    if(type == 0 || *type == 0 || strcmp(type, "string") == 0)
-        return  BTIF_CFG_TYPE_STR;
     error("unknown value type:%s", type);
     return BTIF_CFG_TYPE_INVALID;
 }
@@ -870,11 +874,11 @@ int load_bluez_linkkeys(const char* adapter_path)
                         if(*value)
                         {
                             if(load_bluez_dev_value(adapter_path, addr,
-                                                BLUEZ_CLASSES, "DevClass", BTIF_CFG_TYPE_INT) &&
+                                                BLUEZ_CLASSES, "DevClass", BTIF_CFG_TYPE_INT) ||
                                load_bluez_dev_value(adapter_path, addr,
-                                                BLUEZ_NAMES, "Name", BTIF_CFG_TYPE_STR) &&
+                                                BLUEZ_NAMES, "Name", BTIF_CFG_TYPE_STR) ||
                                load_bluez_dev_value(adapter_path, addr,
-                                                BLUEZ_TYPES, "DevType", BTIF_CFG_TYPE_INT) &&
+                                                BLUEZ_TYPES, "DevType", BTIF_CFG_TYPE_INT) ||
                                load_bluez_dev_value(adapter_path, addr,
                                                 BLUEZ_PROFILES, "Service", BTIF_CFG_TYPE_STR))
                             {
