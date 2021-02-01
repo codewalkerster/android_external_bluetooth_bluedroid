@@ -164,6 +164,7 @@ typedef struct
 static struct bt_usb_device btusb_table[] = {
     /* Generic Bluetooth USB device */
     { BT_USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
+    { BT_USB_DEVICE_INFO(0xef, 0x02, 0x01) },
     { }     /* Terminating entry */
 };
 
