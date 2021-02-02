@@ -29,6 +29,7 @@
 #include <dlfcn.h>
 #include <utils/Log.h>
 #include <pthread.h>
+#include <cutils/properties.h>
 #include "bt_vendor_lib.h"
 #include "bt_hci_bdroid.h"
 #include "hci.h"
@@ -50,6 +51,7 @@ void lpm_vnd_sleep_func(uint8_t vnd_result);
 ******************************************************************************/
 
 bt_vendor_interface_t *bt_vnd_if=NULL;
+static const char BT_PROP_NAME[]    = "bt.vendor.name";
 
 /******************************************************************************
 **  Functions
@@ -233,8 +235,21 @@ static const bt_vendor_callbacks_t vnd_callbacks = {
 void init_vnd_if(unsigned char *local_bdaddr)
 {
     void *dlhandle;
+    char bt_vendor[PROPERTY_VALUE_MAX];
 
-    dlhandle = dlopen("libbt-vendor.so", RTLD_NOW);
+    if (property_get(BT_PROP_NAME, bt_vendor, NULL)) {
+        ALOGD("bt.vendor.name = %s", bt_vendor);
+        if (strcmp(bt_vendor, "realtek") == 0) {
+            ALOGD("loding libbt-vendor for RealTek combo B/T");
+            dlhandle = dlopen("libbt-vendor-rt.so", RTLD_NOW);
+        } else {
+            ALOGD("loding libbt-vendor for Broadcom CSR B/T");
+            dlhandle = dlopen("libbt-vendor.so", RTLD_NOW);
+        }
+    } else {
+        dlhandle = dlopen("libbt-vendor.so", RTLD_NOW);
+    }
+
     if (!dlhandle)
     {
         ALOGE("!!! Failed to load libbt-vendor.so !!!");
