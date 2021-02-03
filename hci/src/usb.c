@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <sys/socket.h>
+#include <cutils/properties.h>
 #include "bt_hci_bdroid.h"
 #include "usb.h"
 #include "utils.h"
@@ -206,6 +207,8 @@ static struct libusb_transfer *data_rx_xfer, *event_rx_xfer, *iso_rx_xfer,
                               *xmit_transfer;
 static int xmited_len;
 RX_HDR *p_rx_hdr = NULL;
+static const char BT_PROP_NAME[]    = "bt.vendor.name";
+static char bt_vendor[PROPERTY_VALUE_MAX];
 /******************************************************************************
 **  Static functions
 ******************************************************************************/
@@ -275,6 +278,16 @@ static int is_btusb_device (struct libusb_device *dev)
 
     for (id = btusb_table; id->bDevClass; id++)
     {
+        if ((strcmp(bt_vendor, "realtek") == 0) && (id->bDevClass == 0xe0)) {
+            ALOGD("RealTek's Base Class value is not 0xe0");
+            continue;
+        }
+
+        if ((strcmp(bt_vendor, "broadcom") == 0) && (id->bDevClass == 0xef)) {
+            ALOGD("Broadcom's Base Class value is not 0xef");
+            continue;
+        }
+
         if (is_usb_match_idtable (id, &desc) == TRUE)
         {
                 match = 1;
@@ -320,6 +333,8 @@ static libusb_device_handle *libusb_open_bt_device()
     struct libusb_device *dev;
     struct libusb_device_handle *handle = NULL;
     int    r, i;
+
+    property_get(BT_PROP_NAME, bt_vendor, "broadcom");
 
     if (libusb_get_device_list(NULL, &devs) < 0)
     {
